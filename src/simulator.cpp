@@ -271,11 +271,24 @@ private:
 
             case 0x73: // ECALL/EBREAK
                 if (inst == 0x00000073) { // ECALL
-                    // System call - stop simulation and save return value
-                    return_value = (int32_t)regs[10]; // a0 register
-                    running = false;
-                    return;
+                    // Handle system calls based on a7 register
+                    uint32_t syscall_num = regs[17]; // a7
+                    switch (syscall_num) {
+                        case 93: // exit
+                            return_value = (int32_t)regs[10]; // a0
+                            running = false;
+                            return;
+                        case 64: // write - for debugging, just continue
+                        case 63: // read
+                        default:
+                            // For unknown syscalls, try to continue
+                            // Many programs just use ECALL to signal completion
+                            return_value = (int32_t)regs[10]; // a0
+                            running = false;
+                            return;
+                    }
                 } else if (inst == 0x00100073) { // EBREAK
+                    return_value = (int32_t)regs[10]; // a0
                     running = false;
                     return;
                 }
@@ -311,12 +324,12 @@ public:
         int inst_count = 0;
         while (running && pc < MEMORY_SIZE - 3 && inst_count < max_instructions) {
             uint32_t inst = read_word(pc);
-            if (inst == 0 && pc == 0) {
-                // Empty program or uninitialized memory
-                break;
-            }
             execute_instruction(inst);
             inst_count++;
+        }
+        // If program ends without explicit exit, capture a0
+        if (running) {
+            return_value = (int32_t)regs[10];
         }
     }
 
