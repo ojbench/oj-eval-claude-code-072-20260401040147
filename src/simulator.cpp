@@ -7,9 +7,9 @@
 
 using namespace std;
 
-const int MEMORY_SIZE = 1024 * 1024; // 1 MB
+const int MEMORY_SIZE = 1024 * 1024 * 8; // 8 MB
 const int REG_COUNT = 32;
-const uint32_t STACK_START = 0x80000; // 512KB for stack
+const uint32_t STACK_START = 0x7FFFF0; // Near 8MB
 
 class RISCVSimulator {
 private:
