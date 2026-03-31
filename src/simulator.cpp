@@ -9,6 +9,7 @@ using namespace std;
 
 const int MEMORY_SIZE = 1024 * 1024; // 1 MB
 const int REG_COUNT = 32;
+const uint32_t STACK_START = 0x80000; // 512KB for stack
 
 class RISCVSimulator {
 private:
@@ -16,6 +17,7 @@ private:
     uint8_t memory[MEMORY_SIZE];
     uint32_t pc;
     bool running;
+    int return_value;
 
     // Sign extend functions
     int32_t sign_extend(uint32_t value, int bits) {
@@ -215,7 +217,11 @@ private:
 
             case 0x73: // ECALL/EBREAK
                 if (inst == 0x00000073) { // ECALL
-                    // System call - stop simulation
+                    // System call - stop simulation and save return value
+                    return_value = (int32_t)regs[10]; // a0 register
+                    running = false;
+                    return;
+                } else if (inst == 0x00100073) { // EBREAK
                     running = false;
                     return;
                 }
@@ -236,6 +242,9 @@ public:
         memset(memory, 0, sizeof(memory));
         pc = 0;
         running = true;
+        return_value = 0;
+        // Initialize stack pointer to high memory
+        regs[2] = STACK_START; // sp (x2)
     }
 
     void load_program(const vector<uint8_t>& data) {
@@ -255,8 +264,8 @@ public:
     }
 
     void print_output() {
-        // Print register a0 (x10) as the return value
-        cout << (int32_t)regs[10] << endl;
+        // Print return value from program execution
+        cout << return_value << endl;
     }
 };
 
